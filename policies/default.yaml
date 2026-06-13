@@ -1,0 +1,6 @@
+agents:
+  summarizer:
+    allowed_tools: [read_file, list_directory, search_files]
+    denied_tools:  [write_file, move_file, create_directory]
+    max_calls_per_session: 10
+    deny_path_tags: [confidential]
