@@ -1,3 +1,14 @@
+"""
+Aegis — J2: agent loop WITH the policy engine wired into the seam.
+
+Difference vs J1 : avant chaque appel d'outil, on consulte le PolicyEngine.
+Le LLM propose, le code deterministe dispose. Les refus sont renvoyes a
+l'agent comme resultat d'outil, et affiches a l'ecran.
+
+Run:
+    python -m aegis.agent.loop ./demo/workspace
+"""
+
 import asyncio
 import sys
 
@@ -5,8 +16,12 @@ from ollama import AsyncClient
 from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
+from aegis.gateway.policy import PolicyEngine
+
 MODEL = "qwen3:8b"
 MAX_STEPS = 6
+AGENT_NAME = "summarizer"
+POLICY_PATH = "policies/default.yaml"
 
 
 def mcp_tools_to_ollama(mcp_tools) -> list[dict]:
@@ -24,6 +39,8 @@ def mcp_tools_to_ollama(mcp_tools) -> list[dict]:
 
 
 async def run_agent(user_request: str, allowed_dir: str) -> str:
+    policy = PolicyEngine(POLICY_PATH, agent=AGENT_NAME)
+
     server = StdioServerParameters(
         command="npx",
         args=["-y", "@modelcontextprotocol/server-filesystem", allowed_dir],
@@ -61,8 +78,20 @@ async def run_agent(user_request: str, allowed_dir: str) -> str:
                 for call in msg.tool_calls:
                     name = call.function.name
                     args = call.function.arguments
-                    # >>> AEGIS SEAM <<<  (J2: policy check / J3: firewall ici)
-                    print(f"[agent -> tool] {name}({args})")
+
+                    # ┌─────────────── AEGIS SEAM (J2) ───────────────┐
+                    decision = policy.check(name, args)
+                    if not decision.allowed:
+                        print(f"[AEGIS  DENY] {name}({args}) -> {decision.reason}")
+                        messages.append({
+                            "role": "tool",
+                            "name": name,
+                            "content": f"BLOCKED BY AEGIS: {decision.reason}",
+                        })
+                        continue
+                    print(f"[AEGIS ALLOW] {name}({args})")
+                    # └───────────────────────────────────────────────┘
+
                     result = await session.call_tool(name, args)
                     text = "".join(
                         block.text for block in result.content
