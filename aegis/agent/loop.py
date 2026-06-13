@@ -1,9 +1,10 @@
 """
-Aegis — J2: agent loop WITH the policy engine wired into the seam.
+Aegis — J3: agent loop with policy engine (J2) + injection firewall (J3).
 
-Difference vs J1 : avant chaque appel d'outil, on consulte le PolicyEngine.
-Le LLM propose, le code deterministe dispose. Les refus sont renvoyes a
-l'agent comme resultat d'outil, et affiches a l'ecran.
+Deux points de controle distincts :
+  - SORTIE : policy.check() decide si l'agent a le DROIT d'appeler l'outil.
+  - ENTREE : firewall.neutralize() scanne le CONTENU renvoye par l'outil
+             AVANT qu'il n'atteigne le contexte du LLM (injection indirecte).
 
 Run:
     python -m aegis.agent.loop ./demo/workspace
@@ -17,6 +18,7 @@ from mcp import ClientSession, StdioServerParameters
 from mcp.client.stdio import stdio_client
 
 from aegis.gateway.policy import PolicyEngine
+from aegis.gateway.firewall import neutralize
 
 MODEL = "qwen3:8b"
 MAX_STEPS = 6
@@ -79,7 +81,7 @@ async def run_agent(user_request: str, allowed_dir: str) -> str:
                     name = call.function.name
                     args = call.function.arguments
 
-                    # ┌─────────────── AEGIS SEAM (J2) ───────────────┐
+                    # --- AEGIS controle SORTIE : autorisation (J2) ---
                     decision = policy.check(name, args)
                     if not decision.allowed:
                         print(f"[AEGIS  DENY] {name}({args}) -> {decision.reason}")
@@ -90,13 +92,18 @@ async def run_agent(user_request: str, allowed_dir: str) -> str:
                         })
                         continue
                     print(f"[AEGIS ALLOW] {name}({args})")
-                    # └───────────────────────────────────────────────┘
 
                     result = await session.call_tool(name, args)
                     text = "".join(
                         block.text for block in result.content
                         if getattr(block, "text", None)
                     )
+
+                    # --- AEGIS controle ENTREE : firewall injection (J3) ---
+                    text, scan_result = neutralize(text)
+                    if not scan_result.safe:
+                        print(f"[AEGIS FIREWALL] {name}: {scan_result.reason}")
+
                     messages.append({"role": "tool", "name": name, "content": text})
 
             return "Stopped: hit MAX_STEPS without a final answer."
