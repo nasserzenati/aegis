@@ -1,10 +1,8 @@
 """
-Aegis — J3: agent loop with policy engine (J2) + injection firewall (J3).
+Aegis — J4: agent loop + policy (J2) + firewall (J3) + audit logging (J4).
 
-Deux points de controle distincts :
-  - SORTIE : policy.check() decide si l'agent a le DROIT d'appeler l'outil.
-  - ENTREE : firewall.neutralize() scanne le CONTENU renvoye par l'outil
-             AVANT qu'il n'atteigne le contexte du LLM (injection indirecte).
+Chaque decision d'Aegis (allow / deny / firewall) est ecrite dans audit.db
+avec sa latence. Ces evenements alimentent le dashboard ROI/securite.
 
 Run:
     python -m aegis.agent.loop ./demo/workspace
@@ -12,6 +10,7 @@ Run:
 
 import asyncio
 import sys
+import time
 
 from ollama import AsyncClient
 from mcp import ClientSession, StdioServerParameters
@@ -19,6 +18,7 @@ from mcp.client.stdio import stdio_client
 
 from aegis.gateway.policy import PolicyEngine
 from aegis.gateway.firewall import neutralize
+from aegis.audit.logger import log_event
 
 MODEL = "qwen3:8b"
 MAX_STEPS = 6
@@ -81,10 +81,11 @@ async def run_agent(user_request: str, allowed_dir: str) -> str:
                     name = call.function.name
                     args = call.function.arguments
 
-                    # --- AEGIS controle SORTIE : autorisation (J2) ---
+                    # --- SORTIE : autorisation (J2) ---
                     decision = policy.check(name, args)
                     if not decision.allowed:
                         print(f"[AEGIS  DENY] {name}({args}) -> {decision.reason}")
+                        log_event(AGENT_NAME, name, "deny", decision.reason, 0)
                         messages.append({
                             "role": "tool",
                             "name": name,
@@ -93,16 +94,22 @@ async def run_agent(user_request: str, allowed_dir: str) -> str:
                         continue
                     print(f"[AEGIS ALLOW] {name}({args})")
 
+                    # --- execution + mesure latence ---
+                    t0 = time.perf_counter()
                     result = await session.call_tool(name, args)
+                    latency_ms = int((time.perf_counter() - t0) * 1000)
                     text = "".join(
                         block.text for block in result.content
                         if getattr(block, "text", None)
                     )
 
-                    # --- AEGIS controle ENTREE : firewall injection (J3) ---
+                    # --- ENTREE : firewall injection (J3) ---
                     text, scan_result = neutralize(text)
                     if not scan_result.safe:
                         print(f"[AEGIS FIREWALL] {name}: {scan_result.reason}")
+                        log_event(AGENT_NAME, name, "firewall", scan_result.reason, latency_ms)
+                    else:
+                        log_event(AGENT_NAME, name, "allow", "ok", latency_ms)
 
                     messages.append({"role": "tool", "name": name, "content": text})
 
