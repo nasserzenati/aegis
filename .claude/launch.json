@@ -6,6 +6,12 @@
       "runtimeExecutable": "streamlit",
       "runtimeArgs": ["run", "dashboard/app.py", "--server.headless", "true", "--server.port", "8501"],
       "port": 8501
+    },
+    {
+      "name": "aegis-demo",
+      "runtimeExecutable": "streamlit",
+      "runtimeArgs": ["run", "demo_app.py", "--server.headless", "true", "--server.port", "8502"],
+      "port": 8502
     }
   ]
 }
