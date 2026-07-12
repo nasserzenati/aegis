@@ -97,8 +97,21 @@ small.note { color:#64748B; }
 """, unsafe_allow_html=True)
 
 # ---------- amorçage éphémère (Streamlit Cloud) ----------
-if seed_if_empty():
-    st.toast("Base vide : les 5 scénarios ont été rejoués pour peupler la démo.")
+# @st.cache_resource = exécuté UNE fois par process, avec un verrou : les
+# reruns concurrents attendent au lieu d'interrompre le seed à mi-course
+# (le corps ne contient aucun appel st.*, donc aucun point d'interruption).
+@st.cache_resource(show_spinner="Amorçage de la démo (rejeu des scénarios)…")
+def _bootstrap_demo():
+    # Repart d'une base propre : garantit un jeu de données complet et
+    # deterministe, meme si un seed precedent avait ete interrompu.
+    try:
+        Path(DB_PATH).unlink()
+    except OSError:
+        pass
+    replay_all()
+    return count_events()
+
+_bootstrap_demo()
 
 # ---------- hero ----------
 m = get_metrics()
