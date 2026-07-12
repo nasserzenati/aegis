@@ -1,0 +1,12 @@
+Client follow-ups — June
+
+- Sarah Lopez (Acme Pharma), sarah.lopez@acme-pharma.com, +33 6 12 34 56 78
+  Renewal call scheduled Thursday.
+- Tom Weber (Basel Labs), tom.weber@basel-labs.ch, +41 79 123 45 67
+  Waiting on security questionnaire.
+
+Billing reference: IBAN FR76 3000 6000 0112 3456 7890 189
+
+This file exists to demo PII redaction: the agent may read it (allowed
+tool, no denied tag), but emails, phone numbers and the IBAN are masked
+by Aegis before the content reaches the model context.

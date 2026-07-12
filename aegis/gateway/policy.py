@@ -8,8 +8,16 @@ simple recherche de sous-chaine (ex: un chemin contenant "confidential").
 Un vrai systeme resoudrait les tags via un catalogue de donnees / metadata.
 """
 
+import re
 from dataclasses import dataclass
+
 import yaml
+
+# "../" ou "..\" en tete, au milieu ou en fin d'un argument : tentative de
+# sortir du repertoire autorise. Le serveur MCP filesystem le refuse aussi,
+# mais defense en profondeur : Aegis ne doit pas dependre du bon
+# comportement du serveur d'en face.
+_TRAVERSAL = re.compile(r"(^|[\\/])\.\.([\\/]|$)")
 
 
 @dataclass
@@ -45,7 +53,12 @@ class PolicyEngine:
         if self.max_calls is not None and self.calls_made >= self.max_calls:
             return Decision(False, f"quota de session atteint ({self.max_calls})")
 
-        # 4. Tags de chemin interdits (v1 : sous-chaine dans un argument).
+        # 4. Path traversal : aucun argument ne doit sortir du workspace.
+        for value in args.values():
+            if _TRAVERSAL.search(str(value)):
+                return Decision(False, "path traversal ('..') refuse")
+
+        # 5. Tags de chemin interdits (v1 : sous-chaine dans un argument).
         for value in args.values():
             text = str(value).lower()
             for tag in self.deny_path_tags:
@@ -65,6 +78,7 @@ if __name__ == "__main__":
         ("write_file",     {"path": "demo/workspace/x.txt"}),
         ("send_email",     {"to": "external@example.com"}),
         ("read_text_file", {"path": "demo/workspace/confidential_roadmap.txt"}),
+        ("read_text_file", {"path": "../../etc/passwd"}),
     ]
     for tool, args in scenarios:
         d = engine.check(tool, args)

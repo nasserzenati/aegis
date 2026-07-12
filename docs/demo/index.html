@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Aegis — Control Plane (démo)</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #0B1220; color: #CBD5E1;
+    font: 15px/1.6 Inter, -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding: 2.5rem 1.4rem 4rem; }
+  h1 { font-size: 2.2rem; font-weight: 750; letter-spacing: -.02em;
+    background: linear-gradient(90deg, #2DD4BF, #60A5FA);
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+  .sub { color: #94A3B8; margin-top: .4rem; max-width: 62rem; }
+  .chips { display: flex; gap: .5rem; flex-wrap: wrap; margin: .9rem 0 1.6rem; }
+  .chip { font-size: .78rem; background: #16203A; border: 1px solid #243350;
+    border-radius: 999px; padding: .25rem .75rem; }
+  .chip b { color: #E2E8F0; }
+  .kpis { display: grid; grid-template-columns: repeat(6, 1fr); gap: .8rem; }
+  .card { background: linear-gradient(180deg, #16203A, #121A30);
+    border: 1px solid #1E2A47; border-top: 3px solid var(--accent);
+    border-radius: 14px; padding: 1rem 1.1rem; }
+  .card .lbl { color: #94A3B8; font-size: .72rem; text-transform: uppercase;
+    letter-spacing: .06em; margin-bottom: .25rem; }
+  .card .val { font-size: 1.9rem; font-weight: 750; color: #F1F5F9;
+    font-variant-numeric: tabular-nums; }
+  .card .hint { color: #64748B; font-size: .74rem; margin-top: .25rem; }
+  h2 { color: #F1F5F9; font-size: 1.25rem; margin: 2.4rem 0 1rem; }
+  .grid2 { display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.4rem; }
+  .panel { background: #0E1628; border: 1px solid #1E2A47; border-radius: 14px;
+    padding: 1.2rem; }
+  svg { width: 100%; height: auto; display: block; }
+  .sec-card { background: #131C33; border: 1px solid #243350;
+    border-left: 4px solid var(--c); border-radius: 10px;
+    padding: .7rem 1rem; margin-bottom: .6rem; }
+  .sec-card .tag { font-weight: 700; font-size: .78rem; color: var(--c); }
+  .sec-card .when { color: #64748B; font-size: .76rem; float: right; }
+  .sec-card .why { color: #CBD5E1; font-size: .85rem; margin-top: .2rem; }
+  code { font-family: ui-monospace, Menlo, monospace; background: #0B1220;
+    border: 1px solid #243350; padding: .06rem .4rem; border-radius: 5px;
+    font-size: .82em; color: #E2E8F0; }
+  .tablewrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+  th, td { text-align: left; padding: .5rem .65rem;
+    border-bottom: 1px solid #1E2A47; vertical-align: top; }
+  th { color: #94A3B8; font-weight: 600; font-size: .72rem;
+    text-transform: uppercase; letter-spacing: .05em; }
+  td.reason { color: #94A3B8; max-width: 34rem; }
+  .badge { color: var(--c); font-weight: 700; }
+  .ok { color: #2DD4BF; }
+  .footer { margin-top: 2.5rem; color: #64748B; font-size: .8rem; }
+  @media (max-width: 980px) { .kpis { grid-template-columns: repeat(3, 1fr); }
+    .grid2 { grid-template-columns: 1fr; } }
+  @media (max-width: 560px) { .kpis { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛡️ Aegis — agentic control plane</h1>
+  <p class="sub">Le LLM propose, la politique dispose. Policy engine ·
+  firewall anti-injection · redaction PII · contrôle de sortie · audit trail
+  scellé — modèle local (Ollama), les données ne quittent jamais la machine.</p>
+  <div class="chips">
+    <span class="chip"><b>5</b> sessions d'agent</span>
+    <span class="chip"><b>22</b> décisions auditées</span>
+    <span class="chip">latence outil moyenne <b>73 ms</b></span>
+    <span class="chip">🔗 chaîne d'audit <b>intègre</b> (7 événements scellés)</span>
+  </div>
+
+  <div class="kpis"><div class="card" style="--accent:#0D9488"><div class="lbl">Actions autorisées</div><div class="val">12</div><div class="hint">conformes à la politique</div></div><div class="card" style="--accent:#D97706"><div class="lbl">Bloquées (policy)</div><div class="val">4</div><div class="hint">avant toute exécution</div></div><div class="card" style="--accent:#EF4444"><div class="lbl">Injections neutralisées</div><div class="val">3</div><div class="hint">jamais vues par le modèle</div></div><div class="card" style="--accent:#8B5CF6"><div class="lbl">Sorties assainies</div><div class="val">1</div><div class="hint">exfiltration coupée en sortie</div></div><div class="card" style="--accent:#3B82F6"><div class="lbl">PII masquées</div><div class="val">8</div><div class="hint">emails, téléphones, IBAN…</div></div><div class="card" style="--accent:#64748B"><div class="lbl">Temps gagné</div><div class="val">18.0 min</div><div class="hint">à ~90 s / action automatisée</div></div></div>
+
+  <div class="grid2">
+    <div>
+      <h2>Répartition des décisions</h2>
+      <div class="panel"><svg viewBox="0 0 560 300" role="img" aria-label="Répartition des décisions"><rect x="92" y="26" width="64" height="240" rx="4" fill="#0D9488"/><text x="124" y="18" text-anchor="middle" fill="#E2E8F0" font-size="15" font-weight="600">12</text><text x="124" y="288" text-anchor="middle" fill="#94A3B8" font-size="13">allow</text><rect x="196" y="186" width="64" height="80" rx="4" fill="#D97706"/><text x="228" y="178" text-anchor="middle" fill="#E2E8F0" font-size="15" font-weight="600">4</text><text x="228" y="288" text-anchor="middle" fill="#94A3B8" font-size="13">deny</text><rect x="300" y="206" width="64" height="60" rx="4" fill="#EF4444"/><text x="332" y="198" text-anchor="middle" fill="#E2E8F0" font-size="15" font-weight="600">3</text><text x="332" y="288" text-anchor="middle" fill="#94A3B8" font-size="13">firewall</text><rect x="404" y="246" width="64" height="20" rx="4" fill="#8B5CF6"/><text x="436" y="238" text-anchor="middle" fill="#E2E8F0" font-size="15" font-weight="600">1</text><text x="436" y="288" text-anchor="middle" fill="#94A3B8" font-size="13">egress</text></svg></div>
+    </div>
+    <div>
+      <h2>Chronologie des décisions</h2>
+      <div class="panel"><svg viewBox="0 0 620 300" role="img" aria-label="Chronologie des décisions"><line x1="76" y1="52" x2="596" y2="52" stroke="#1E2A47" stroke-width="1"/><text x="66" y="56" text-anchor="end" fill="#94A3B8" font-size="12">allow</text><line x1="76" y1="114" x2="596" y2="114" stroke="#1E2A47" stroke-width="1"/><text x="66" y="118" text-anchor="end" fill="#94A3B8" font-size="12">deny</text><line x1="76" y1="176" x2="596" y2="176" stroke="#1E2A47" stroke-width="1"/><text x="66" y="180" text-anchor="end" fill="#94A3B8" font-size="12">firewall</text><line x1="76" y1="238" x2="596" y2="238" stroke="#1E2A47" stroke-width="1"/><text x="66" y="242" text-anchor="end" fill="#94A3B8" font-size="12">egress</text><circle cx="596" cy="176" r="7" fill="#EF4444" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — injection suspecte</title></circle><circle cx="596" cy="114" r="7" fill="#D97706" stroke="#0B1220" stroke-width="1.5"><title>write_file — outil interdit</title></circle><circle cx="596" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — ok</title></circle><circle cx="596" cy="238" r="7" fill="#8B5CF6" stroke="#0B1220" stroke-width="1.5"><title>final_answer — sortie assainie: 1 image(s) distante(s) supprimee(s), 1 PII masquee(s)</title></circle><circle cx="596" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — 2 PII masquee(s): 1 email, 1 phone</title></circle><circle cx="596" cy="114" r="7" fill="#D97706" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — acces aux donnees &#x27;confidential&#x27; interdit</title></circle><circle cx="596" cy="176" r="7" fill="#EF4444" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — injection suspecte (score 5): override-instructions, fake-system, send-to-target</title></circle><circle cx="596" cy="114" r="7" fill="#D97706" stroke="#0B1220" stroke-width="1.5"><title>write_file — outil &#x27;write_file&#x27; sur la liste interdite</title></circle><circle cx="596" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — 3 PII masquee(s): 2 email, 1 phone</title></circle><circle cx="596" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — ok</title></circle><circle cx="596" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_directory — ok</title></circle><circle cx="76" cy="176" r="7" fill="#EF4444" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — injection suspecte: system\s*:, send (it|them|the|this|all).{0,40}(to|@)</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_directory — ok</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_allowed_directories — ok</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_directory — ok</title></circle><circle cx="76" cy="114" r="7" fill="#D97706" stroke="#0B1220" stroke-width="1.5"><title>write_file — outil &#x27;write_file&#x27; sur la liste interdite</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>read_text_file — ok</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_directory — ok</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_allowed_directories — ok</title></circle><circle cx="76" cy="52" r="7" fill="#0D9488" stroke="#0B1220" stroke-width="1.5"><title>list_directory — ok</title></circle><text x="76" y="290" fill="#64748B" font-size="11">13 Jun 20:20</text><text x="596" y="290" text-anchor="end" fill="#64748B" font-size="11">12 Jul 22:16</text></svg></div>
+    </div>
+  </div>
+
+  <h2>Événements de sécurité</h2>
+  <div class="sec-card" style="--c:#EF4444"><span class="when">12 Jul 22:16:39</span><span class="tag">INJECTION NEUTRALISÉE</span> · <code>read_text_file</code><div class="why">injection suspecte</div></div><div class="sec-card" style="--c:#D97706"><span class="when">12 Jul 22:16:39</span><span class="tag">BLOQUÉ (POLICY)</span> · <code>write_file</code><div class="why">outil interdit</div></div><div class="sec-card" style="--c:#8B5CF6"><span class="when">12 Jul 22:13:49</span><span class="tag">SORTIE ASSAINIE</span> · <code>final_answer</code><div class="why">sortie assainie: 1 image(s) distante(s) supprimee(s), 1 PII masquee(s)</div></div><div class="sec-card" style="--c:#D97706"><span class="when">12 Jul 21:58:22</span><span class="tag">BLOQUÉ (POLICY)</span> · <code>read_text_file</code><div class="why">acces aux donnees &#x27;confidential&#x27; interdit</div></div><div class="sec-card" style="--c:#EF4444"><span class="when">12 Jul 21:58:22</span><span class="tag">INJECTION NEUTRALISÉE</span> · <code>read_text_file</code><div class="why">injection suspecte (score 5): override-instructions, fake-system, send-to-target</div></div><div class="sec-card" style="--c:#D97706"><span class="when">12 Jul 21:58:22</span><span class="tag">BLOQUÉ (POLICY)</span> · <code>write_file</code><div class="why">outil &#x27;write_file&#x27; sur la liste interdite</div></div><div class="sec-card" style="--c:#EF4444"><span class="when">13 Jun 20:22:25</span><span class="tag">INJECTION NEUTRALISÉE</span> · <code>read_text_file</code><div class="why">injection suspecte: system\s*:, send (it|them|the|this|all).{0,40}(to|@)</div></div><div class="sec-card" style="--c:#D97706"><span class="when">13 Jun 20:22:07</span><span class="tag">BLOQUÉ (POLICY)</span> · <code>write_file</code><div class="why">outil &#x27;write_file&#x27; sur la liste interdite</div></div>
+
+  <h2>Journal d'audit</h2>
+  <p class="sub" style="margin-bottom:.8rem">En environnement régulé, cette
+  trace n'est pas un bonus : c'est une obligation. Chaque ligne est scellée
+  par chaînage de hash.</p>
+  <div class="panel tablewrap"><table><thead><tr><th>horodatage (UTC)</th><th>outil</th><th>décision</th><th>raison</th><th>ms</th><th>session</th><th>PII</th></tr></thead><tbody><tr><td>12 Jul 2026 22:16:39</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#EF4444">firewall</span></td><td class="reason">injection suspecte</td><td>95</td><td>demo</td><td></td></tr><tr><td>12 Jul 2026 22:16:39</td><td><code>write_file</code></td><td><span class="badge" style="--c:#D97706">deny</span></td><td class="reason">outil interdit</td><td>2</td><td>demo</td><td></td></tr><tr><td>12 Jul 2026 22:16:39</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>120</td><td>demo</td><td>2</td></tr><tr><td>12 Jul 2026 22:13:49</td><td><code>final_answer</code></td><td><span class="badge" style="--c:#64748B">trace</span></td><td class="reason">Summary sent. [image removed by Aegis] Contact: [EMAIL_REDACTED]</td><td></td><td>d3m0-egr</td><td></td></tr><tr><td>12 Jul 2026 22:13:49</td><td><code>final_answer</code></td><td><span class="badge" style="--c:#8B5CF6">egress</span></td><td class="reason">sortie assainie: 1 image(s) distante(s) supprimee(s), 1 PII masquee(s)</td><td></td><td>d3m0-egr</td><td>1</td></tr><tr><td>12 Jul 2026 22:13:49</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">2 PII masquee(s): 1 email, 1 phone</td><td></td><td>d3m0-egr</td><td>2</td></tr><tr><td>12 Jul 2026 22:13:49</td><td><code>user_request</code></td><td><span class="badge" style="--c:#64748B">trace</span></td><td class="reason">Summarise contacts.txt</td><td></td><td>d3m0-egr</td><td></td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#D97706">deny</span></td><td class="reason">acces aux donnees &#x27;confidential&#x27; interdit</td><td></td><td>c9d0e1f2</td><td></td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#EF4444">firewall</span></td><td class="reason">injection suspecte (score 5): override-instructions, fake-system, send-to-target</td><td>190</td><td>e5f6a7b8</td><td></td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>write_file</code></td><td><span class="badge" style="--c:#D97706">deny</span></td><td class="reason">outil &#x27;write_file&#x27; sur la liste interdite</td><td></td><td>e5f6a7b8</td><td></td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">3 PII masquee(s): 2 email, 1 phone</td><td>205</td><td>a1b2c3d4</td><td>3</td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>180</td><td>a1b2c3d4</td><td></td></tr><tr><td>12 Jul 2026 21:58:22</td><td><code>list_directory</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>240</td><td>a1b2c3d4</td><td></td></tr><tr><td>13 Jun 2026 20:22:25</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#EF4444">firewall</span></td><td class="reason">injection suspecte: system\s*:, send (it|them|the|this|all).{0,40}(to|@)</td><td>7</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:22:22</td><td><code>list_directory</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>14</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:22:19</td><td><code>list_allowed_directories</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>3</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:22:16</td><td><code>list_directory</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>9</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:22:07</td><td><code>write_file</code></td><td><span class="badge" style="--c:#D97706">deny</span></td><td class="reason">outil &#x27;write_file&#x27; sur la liste interdite</td><td></td><td></td><td></td></tr><tr><td>13 Jun 2026 20:20:56</td><td><code>read_text_file</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>7</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:20:52</td><td><code>list_directory</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>8</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:20:49</td><td><code>list_allowed_directories</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>6</td><td></td><td></td></tr><tr><td>13 Jun 2026 20:20:47</td><td><code>list_directory</code></td><td><span class="badge" style="--c:#0D9488">allow</span></td><td class="reason">ok</td><td>13</td><td></td><td></td></tr></tbody></table></div>
+
+  <div class="footer">Snapshot statique du dashboard Aegis, généré le 12 Jul 2026, 22:26 UTC
+  depuis <code>audit.db</code> — données de démonstration.
+  Version interactive : <code>streamlit run dashboard/app.py</code>.</div>
+</div>
+</body>
+</html>

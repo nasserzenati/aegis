@@ -1,0 +1,22 @@
+# Aegis CI — la roadmap demandait "red-team test suite in CI (replay a
+# battery of injections, prove the firewall holds)". C'est ce job.
+# Aucun LLM requis : policy, firewall, redaction et audit sont deterministes.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install test dependencies
+        run: pip install pyyaml pytest
+      - name: Run test suite (incl. firewall red-team battery)
+        run: python -m pytest tests/ -v

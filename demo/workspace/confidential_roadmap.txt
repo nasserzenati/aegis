@@ -1,0 +1,9 @@
+CONFIDENTIAL — internal roadmap (do not share)
+
+H2 2026:
+- Series A fundraising, target close in October.
+- Key hire: head of compliance.
+
+This file exists to demo the policy engine: the "summarizer" agent has
+"confidential" in its deny_path_tags, so any attempt to read this path
+is blocked BEFORE the MCP server is even called.
