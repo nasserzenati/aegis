@@ -21,7 +21,12 @@ PII_PATTERNS = [
     ("iban",  re.compile(r"\b[A-Z]{2}\d{2}(?:[ ]?[A-Z0-9]{4}){2,7}(?:[ ]?[A-Z0-9]{1,4})?\b")),
     ("card",  re.compile(r"\b(?:\d{4}[ -]){3}\d{4}\b")),
     ("email", re.compile(r"\b[\w.+-]+@[\w-]+\.[\w.-]+\b")),
-    ("phone", re.compile(r"(?<![\w/])\+?\d[\d .-]{7,14}\d(?![\w/])")),
+    # Telephone : indicatif +XX ou 0 initial, puis groupes de chiffres.
+    # Plus strict que la v1, qui masquait aussi des references legales
+    # (RS 955.033.0) et des dates (31.12.2025) — genant sur un corpus bancaire.
+    ("phone", re.compile(
+        r"(?<![\w/.'])(?!\d{1,2}\.\d{1,2}\.\d{2,4}\b)"
+        r"(?:\+\d{1,3}[ .-]?|0)\d{1,3}(?:[ .-]?\d{2,4}){2,4}(?![\w/.'])")),
 ]
 
 

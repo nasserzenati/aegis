@@ -147,6 +147,32 @@ Where it breaks (honest limits):
 - Static snapshot export (dashboard/export_static.py) for instant-loading
   portfolio hosting — no Python server, no cold start.
 
+## Field test: Swiss private-banking RAG assistant (FR/DE/EN)
+
+Aegis was applied to a local RAG assistant for a Swiss private bank (regulatory
+corpus: FINMA circular 2023/1, FINMA guidance 08/2024, AMLA, FADP, plus
+fictitious internal documents). The test exposed three blind spots, fixed on
+branch `feat/banque-suisse-multilingue`:
+
+- Firewall was English-only: all French and German injections passed. Added
+  accent folding and FR/DE rules (qualified overrides, fake system messages,
+  instructions addressed to an AI or to "automated systems", link redirection,
+  credential lures). Bare overrides ("le client ignore les regles") stay weak
+  signals to avoid false positives on regulatory text.
+- Egress only cut URLs carrying a query string: a plain phishing link
+  (`https://fake-support.example/login`) went through. Added a strict mode
+  (`screen(text, block_all_urls=True)` or `AEGIS_EGRESS_STRICT=1`): no URL
+  leaves the agent.
+- The phone pattern masked legal references (`RS 955.033.0`) and dates
+  (`31.12.2025`). It now requires an international prefix or a leading 0 and
+  excludes dates.
+
+Measured: the 3 attacks from the field test and 8 new FR/DE attacks (distinct
+held-out phrasings, `tests/test_swiss_banking.py`) are blocked; 0 false
+positives and 0 spurious PII masks on 292 chunks of the official FINMA/AMLA/FADP
+texts. Still heuristic: a creative paraphrase or Italian/Romansh text can get
+through (v3 = local classifier).
+
 ## Roadmap / not yet built
 
 - Human-in-the-loop approval for sensitive-but-allowed actions (policy verdict

@@ -17,6 +17,19 @@ Limites connues, documentees dans le README :
   - contournable par paraphrase creative ou langue rare ;
   - pas de classifieur ML (piste v3).
 On prefere une defense honnete + lucide a une fausse forteresse.
+
+Ajout "banque suisse" (FR/DE) : les regles v2 d'origine ne couvraient que
+l'anglais. Un test sur un assistant reglementaire bancaire (corpus FR/DE/EN)
+a montre que des injections en francais et en allemand passaient toutes.
+  - normalisation etendue : suppression des accents (systeme = système) ;
+  - regles FR/DE d'override, de faux message systeme et d'instructions
+    adressees a une IA / a des "systemes automatises" ;
+  - signaux faibles FR/DE/EN : redirection vers un lien, demande de
+    confirmer son identite, consigne sur la fin de chaque reponse.
+Les overrides FR/DE "nus" (ex. "le client ignore les regles") restent des
+signaux faibles ; seules les formes qualifiees (precedentes, toutes les...,
+vorherigen...) bloquent seules — pour limiter les faux positifs sur des
+textes reglementaires qui parlent legitimement de regles et d'instructions.
 """
 
 import base64
@@ -48,7 +61,45 @@ RULES = [
     Rule("reveal-prompt", r"reveal (your|the) (system )?prompt", 2),
     Rule("exfil-explicit", r"(exfiltrate|leak (the|all|internal))", 2),
 
+    # --- FR / DE : overrides qualifies, forts. ---
+    Rule("fr-override-qualified",
+         r"\b(ignore[sz]?|oublie[sz]?|ne (tiens|tenez) (pas|plus) compte)\b.{0,40}"
+         r"\b(instructions?|consignes?|regles|directives)\b.{0,20}"
+         r"\b(precedentes?|anterieures?|ci-dessus|prealables?|initiales?)", 2),
+    Rule("fr-override-all",
+         r"\b(ignore[sz]?|oublie[sz]?)\s+(toutes|tous)\s+(les|tes|vos)\s+"
+         r"(instructions|consignes|regles|directives)", 2),
+    Rule("de-override-qualified",
+         r"\b(ignorier\w*|vergiss\w*|missacht\w*)\b.{0,40}"
+         r"\b(vorherig\w*|bisherig\w*|obig\w*|alle)\b.{0,20}"
+         r"\b(anweisungen|regeln|vorgaben|instruktionen)", 2),
+    Rule("fake-system-fr-de",
+         r"(instructions?\s+(du\s+)?systeme|systemanweisung|systemnachricht|"
+         r"message\s+systeme\s*:)", 2),
+
     # --- Signaux contextuels : faibles, se combinent. ---
+    Rule("fr-de-override-bare",
+         r"\b(ignore[sz]?|oublie[sz]?|ignorier\w*|vergiss\w*)\b.{0,30}"
+         r"\b(instructions?|consignes?|regles|anweisungen|regeln)\b", 1),
+    Rule("addressed-to-ai",
+         r"\b(note|message|consigne|instruction|hinweis)s?\s+"
+         r"(pour|a l.attention de|destinee?s?\s+a|for|to|fur|an)\s+"
+         r"(l.|les\s+|the\s+|den\s+|die\s+)?"
+         r"(assistant|ia|ai|llm|modele|model|chatbot|ki|agent)s?\b", 1),
+    Rule("addressed-to-automation",
+         r"\b(systemes?\s+automatises?|automated\s+systems?|"
+         r"automatisierte\w*\s+systeme?)\b", 1),
+    Rule("answer-shaping",
+         r"\b(termine[rz]?|finis(sez)?|end|beende\w*)\b.{0,25}"
+         r"\b(chaque|toute|ta|votre|each|every|your|jede)\w*\s+"
+         r"(reponse|answer|antwort)", 1),
+    Rule("redirect-to-link",
+         r"(renvoie[rz]?|redirige[rz]?|invite[rz]?|dirige[rz]?|direct|redirect|"
+         r"verweise\w*).{0,80}(https?://|www\.)", 1),
+    Rule("credential-lure",
+         r"(confirm(er|ez|e)?\s+(son|votre|ton|your)\s+(identite|identity|"
+         r"mot de passe|password)|identitat\s+bestatigen)", 1),
+
     Rule("send-to-target", r"send (it|them|the|this|all).{0,60}(to|@)", 1),
     Rule("urgency-override",
          r"(before doing anything else|do this first|immediately and without)", 1),
@@ -73,12 +124,20 @@ class ScanResult:
         return f"injection suspecte (score {self.score}): {', '.join(self.matches)}"
 
 
+def _fold_accents(text: str) -> str:
+    """systeme = système, regles = règles, bestatigen = bestätigen."""
+    decomposed = unicodedata.normalize("NFKD", text)
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
+
+
 def _normalize(text: str) -> tuple[str, int]:
-    """NFKC + minuscules ; renvoie aussi le nombre de zero-width retires."""
+    """NFKC + minuscules + accents retires ; renvoie aussi le nombre de
+    zero-width retires."""
     hidden = sum(text.count(c) for c in ZERO_WIDTH)
     for c in ZERO_WIDTH:
         text = text.replace(c, "")
-    return unicodedata.normalize("NFKC", text).lower(), hidden
+    text = unicodedata.normalize("NFKC", text).lower()
+    return _fold_accents(text).replace("\u2019", "'"), hidden
 
 
 def _decoded_b64_chunks(text: str) -> list[str]:

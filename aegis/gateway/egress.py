@@ -17,7 +17,14 @@ v1 assumee, deterministe :
     d'exfiltration classique) — les URLs simples restent ;
   - les PII restantes sont masquees (le modele peut en produire de
     memoire, pas seulement en recopier).
+
+Mode strict (block_all_urls=True, ou AEGIS_EGRESS_STRICT=1) : TOUTE URL est
+supprimee, y compris sans query string. Pour un assistant interne de banque,
+aucun lien ne devrait sortir : un lien de phishing sans parametre
+(https://faux-support.example/login) passait le mode par defaut.
 """
+
+import os
 
 import re
 from dataclasses import dataclass, field
@@ -32,6 +39,14 @@ _MD_IMAGE = re.compile(r"!\[[^\]]*\]\(\s*https?://[^)]*\)")
 # encoder n'importe quelle donnee du contexte. Supprimee.
 _MD_LINK_WITH_QUERY = re.compile(r"\[[^\]]*\]\(\s*https?://[^)?]*\?[^)]*\)")
 _RAW_URL_WITH_QUERY = re.compile(r"https?://[^\s)\]]+\?[^\s)\]]+")
+
+# Mode strict : toute URL (markdown ou brute, avec ou sans query string).
+_MD_LINK_ANY = re.compile(r"\[[^\]]*\]\(\s*https?://[^)]*\)")
+_RAW_URL_ANY = re.compile(r"(?:https?://|www\.)[^\s)\]]+")
+
+
+def _strict_default() -> bool:
+    return os.environ.get("AEGIS_EGRESS_STRICT", "").lower() in {"1", "true", "yes"}
 
 
 @dataclass
@@ -60,11 +75,19 @@ class EgressResult:
         return "sortie assainie: " + ", ".join(parts)
 
 
-def screen(text: str) -> EgressResult:
-    """Assainit la reponse finale avant qu'elle ne quitte l'agent."""
+def screen(text: str, block_all_urls: bool | None = None) -> EgressResult:
+    """Assainit la reponse finale avant qu'elle ne quitte l'agent.
+
+    block_all_urls=None -> suit AEGIS_EGRESS_STRICT (defaut : False)."""
+    if block_all_urls is None:
+        block_all_urls = _strict_default()
     text, images = _MD_IMAGE.subn("[image removed by Aegis]", text)
-    text, links_md = _MD_LINK_WITH_QUERY.subn("[link removed by Aegis]", text)
-    text, links_raw = _RAW_URL_WITH_QUERY.subn("[link removed by Aegis]", text)
+    if block_all_urls:
+        text, links_md = _MD_LINK_ANY.subn("[link removed by Aegis]", text)
+        text, links_raw = _RAW_URL_ANY.subn("[link removed by Aegis]", text)
+    else:
+        text, links_md = _MD_LINK_WITH_QUERY.subn("[link removed by Aegis]", text)
+        text, links_raw = _RAW_URL_WITH_QUERY.subn("[link removed by Aegis]", text)
 
     redaction = redact(text)
     return EgressResult(
