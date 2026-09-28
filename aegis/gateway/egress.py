@@ -56,6 +56,7 @@ class EgressResult:
     links_removed: int = 0
     pii_redacted: int = 0
     pii_counts: dict = field(default_factory=dict)
+    strict: bool = False
 
     @property
     def clean(self) -> bool:
@@ -69,7 +70,8 @@ class EgressResult:
         if self.images_removed:
             parts.append(f"{self.images_removed} image(s) distante(s) supprimee(s)")
         if self.links_removed:
-            parts.append(f"{self.links_removed} URL(s) a query string supprimee(s)")
+            kind = "URL(s)" if self.strict else "URL(s) a query string"
+            parts.append(f"{self.links_removed} {kind} supprimee(s)")
         if self.pii_redacted:
             parts.append(f"{self.pii_redacted} PII masquee(s)")
         return "sortie assainie: " + ", ".join(parts)
@@ -96,6 +98,7 @@ def screen(text: str, block_all_urls: bool | None = None) -> EgressResult:
         links_removed=links_md + links_raw,
         pii_redacted=redaction.total,
         pii_counts=redaction.counts,
+        strict=block_all_urls,
     )
 
 

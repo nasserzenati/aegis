@@ -1,0 +1,18 @@
+# Aegis — politique d'un assistant RAG reglementaire (banque privee suisse).
+# Le LLM propose, ce fichier dispose : un extrait n'entre dans le contexte que
+# si le role de l'utilisateur peut lire son niveau de classification.
+rag_roles:
+  gestionnaire:          # gestionnaire de clientele (front office)
+    allowed_levels: [public, interne]
+    max_chunks: 5
+  compliance:
+    allowed_levels: [public, interne]
+    max_chunks: 5
+  juridique:
+    allowed_levels: [public, interne, confidentiel]
+    max_chunks: 5
+
+rag_options:
+  exclude_superseded: true        # versions remplacees jamais dans le contexte
+  firewall_granularity: line      # retirer les lignes suspectes, garder le reste
+  egress_block_all_urls: true     # aucun lien ne sort d'un assistant bancaire

@@ -173,6 +173,25 @@ positives and 0 spurious PII masks on 292 chunks of the official FINMA/AMLA/FADP
 texts. Still heuristic: a creative paraphrase or Italian/Romansh text can get
 through (v3 = local classifier).
 
+### RAG guard (`aegis/rag/guard.py`)
+
+An assistant that retrieves documents has no tool calls to intercept, but the
+same control points apply to what it retrieves. `RagGuard` puts Aegis between
+retrieval and generation:
+
+- policy per user role and document classification (`policies/banque_rag.yaml`),
+  default-deny, superseded versions excluded: a front-office user never gets a
+  confidential legal note into the model context;
+- firewall on each retrieved chunk before the context, line by line (only the
+  injected line is dropped, the rest of a legitimate procedure is kept);
+- PII redaction on admitted chunks; strict egress on the answer;
+- every decision and the question/answer trace in the hash-chained audit.
+
+On the corpus of the field test (356 chunks): the 3 injected lines removed with
+their documents kept, confidential and superseded chunks denied by role,
+1 PII mask (none after the phone-pattern fix). 15 tests in `tests/test_rag_guard.py`
+and `tests/test_swiss_banking.py`, no LLM needed.
+
 ## Roadmap / not yet built
 
 - Human-in-the-loop approval for sensitive-but-allowed actions (policy verdict
